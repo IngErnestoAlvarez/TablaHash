@@ -1,4 +1,4 @@
-
+#include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include "lista.h"
@@ -46,17 +46,33 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
 
 
 
+/* *****************************************************************
+ *                          WORK IN PROGRESS
+ * *****************************************************************/
+
 /* Guarda un elemento en el hash, si la clave ya se encuentra en la
  * estructura, la reemplaza. De no poder guardarlo devuelve false.
  * Pre: La estructura hash fue inicializada
  * Post: Se almacenó el par (clave, dato)
  */
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
-    nodo_t* nodo_a_modificar=hash_buscar_clave(hash,clave);
-    if(nodo_a_modificar){
+    if(nodo_t* nodo_a_modificar = hash_buscar_clave(hash,clave);){
         nodo_a_modificar->dato=dato;
         return(true);
     }
+    if(hash->cantidad > hash->capacidad*3){
+      if(!hash_redimensionar(hash, capacidad*2)){
+        printf("No se pudo redimensionar."); //printear en error.txt
+        return(false);
+      }
+    } 
+    nodo_t* nuevo_nodo;
+    nuevo_nodo->clave=clave;
+    nuevo_nodo->dato=dato;
+    int posicion_tabla = funcion_hash(clave);
+    lista_insertar_ultimo(hash->tabla[posicion_tabla],nuevo_nodo);
+    hash->cantidad++;
+    return(true);
     //...
 }
 
