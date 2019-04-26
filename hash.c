@@ -6,7 +6,7 @@
 
 // Los structs deben llamarse "hash" y "hash_iter".
 typedef struct nodo nodo_t;
-10
+
 struct nodo{
     void* dato;
     char* clave;
