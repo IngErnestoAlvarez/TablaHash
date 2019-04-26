@@ -51,7 +51,14 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
  * Pre: La estructura hash fue inicializada
  * Post: Se almacenó el par (clave, dato)
  */
-bool hash_guardar(hash_t *hash, const char *clave, void *dato);
+bool hash_guardar(hash_t *hash, const char *clave, void *dato){
+    nodo_t* nodo_a_modificar=hash_buscar_clave(hash,clave);
+    if(nodo_a_modificar){
+        nodo_a_modificar->dato=dato;
+        return(true);
+    }
+    //...
+}
 
 /* Borra un elemento del hash y devuelve el dato asociado.  Devuelve
  * NULL si el dato no estaba.
