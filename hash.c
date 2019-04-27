@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include "lista.h"
@@ -28,13 +29,30 @@ struct hash_iter{
 //FUNCIONES AUXILIARES//
 /**************************************************************/
 
+int funcion_hash(const char* clave);
+
 /*
 * Pre: El hash fue creado.
 *Devuelve el nodo donde se encontró la clave, si no lo encuentra
 *devuelve NULL.
 */
 nodo_t* hash_buscar_clave(const hash_t* hash, const char* clave){
-
+    lista_t* lista = hash->tabla[funcion_hash(clave)];
+    if(lista_esta_vacia(lista)) return NULL;
+    lista_iter_t* iter = lista_iter_crear(lista);
+    if(!iter){
+        fprintf(stderr, "El iterador de lista no pudo crearse. (hash_buscar_clave)");
+        return NULL;
+    }
+    nodo_t* nodo = NULL;
+    while(!lista_iter_al_final(iter)){
+        if(!strcmp(((nodo_t*)lista_iter_ver_actual(iter))->clave, clave)){
+            nodo = lista_iter_ver_actual(iter);
+        }
+        lista_iter_avanzar(iter);
+    }
+    lista_iter_destruir(iter);
+    return nodo;
 }
 
 /**************************************************************/
@@ -61,11 +79,11 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
         return(true);
     }
     if(hash->cantidad > hash->capacidad*3){
-      if(!hash_redimensionar(hash, capacidad*2)){
+        if(!hash_redimensionar(hash, capacidad*2)){
         printf("No se pudo redimensionar."); //printear en error.txt
         return(false);
-      }
-    } 
+        }
+    }
     nodo_t* nuevo_nodo;
     nuevo_nodo->clave=clave;
     nuevo_nodo->dato=dato;
