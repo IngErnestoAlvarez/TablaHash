@@ -1,11 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include "lista.h"
 #include "hash.h"
 
-// Los structs deben llamarse "hash" y "hash_iter".
 typedef struct nodo nodo_t;
 
 struct nodo{
@@ -29,13 +29,21 @@ struct hash_iter{
 /*FUNCIONES AUXILIARES*/
 /**************************************************************/
 
-int funcion_hash(const char* clave);
+size_t funcion_hash(const char* cp)
+{
+    size_t hash = 0x811c9dc5;
+    while (*cp) {
+        hash ^= (unsigned char) *cp++;
+        hash *= 0x01000193;
+    }
+    return hash;
+}
 
 /* Pre: El hash fue creado.
 *Devuelve el nodo donde se encontró la clave, si no lo encuentra
 *devuelve NULL.*/
 nodo_t* hash_buscar_clave(const hash_t* hash, const char* clave){
-    lista_t* lista = hash->tabla[funcion_hash(clave)];
+    lista_t* lista = hash->tabla[(funcion_hash(clave))%hash->capacidad];
     if(lista_esta_vacia(lista)) return NULL;
     lista_iter_t* iter = lista_iter_crear(lista);
     if(!iter){
@@ -85,7 +93,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     nodo_t* nuevo_nodo;
     nuevo_nodo->clave=clave;
     nuevo_nodo->dato=dato;
-    int posicion_tabla = funcion_hash(clave);
+    int posicion_tabla = (funcion_hash(clave))%hash->capacidad;
     lista_insertar_ultimo(hash->tabla[posicion_tabla],nuevo_nodo);
     hash->cantidad++;
     return(true);
