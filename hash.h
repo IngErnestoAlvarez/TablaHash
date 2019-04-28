@@ -15,8 +15,10 @@ typedef struct hash_iter hash_iter_t;
 typedef void (*hash_destruir_dato_t)(void *);
 
 
-/* Crea el hash
- */
+/* Devuelve el hash creado, si el hash no pudo ser creado
+Devuelve NULL.
+Post: El hash fue creado.
+*/
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
 
 

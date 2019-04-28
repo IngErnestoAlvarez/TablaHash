@@ -26,16 +26,14 @@ struct hash_iter{
 };
 
 /**************************************************************/
-//FUNCIONES AUXILIARES//
+/*FUNCIONES AUXILIARES*/
 /**************************************************************/
 
 int funcion_hash(const char* clave);
 
-/*
-* Pre: El hash fue creado.
+/* Pre: El hash fue creado.
 *Devuelve el nodo donde se encontró la clave, si no lo encuentra
-*devuelve NULL.
-*/
+*devuelve NULL.*/
 nodo_t* hash_buscar_clave(const hash_t* hash, const char* clave){
     lista_t* lista = hash->tabla[funcion_hash(clave)];
     if(lista_esta_vacia(lista)) return NULL;
@@ -55,9 +53,9 @@ nodo_t* hash_buscar_clave(const hash_t* hash, const char* clave){
     return nodo;
 }
 
-/**************************************************************/
-//FUNCIONES HASH//
-/**************************************************************/
+/**********************************************/
+/* FUNCIONES DE HASH */
+/*********************************************/
 
 /* Crea el hash */
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
@@ -125,8 +123,10 @@ void hash_destruir(hash_t *hash){
     free(hash->tabla);
     free(hash);
 }
-/* Iterador del hash */
 
+/**********************************************/
+/* ITERADOR DEL HASH */
+/*********************************************/
 hash_iter_t *hash_iter_crear(const hash_t *hash){
     hash_iter_t* iter = malloc(sizeof(hash_iter_t));
     if(!iter) return NULL;
@@ -139,14 +139,23 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
     return iter;
 }
 
-// Avanza iterador
-bool hash_iter_avanzar(hash_iter_t *iter);
+bool hash_iter_avanzar(hash_iter_t *iter){
+    if(lista_iter_avanzar(iter->iterador_lista)) return true;
+    iter->pos++;
+    if(hash_iter_al_final(iter)) return false;
+    lista_iter_destruir(iter->iterador_lista);
+    iter->iterador_lista = lista_iter_crear(iter->mi_hash->tabla[iter->pos]);
+    if(!iter->iterador_lista){
+        fprintf(stderr, "No se pudo crear un iterador nuevo");
+    }
+    return true;
+}
 
 const char *hash_iter_ver_actual(const hash_iter_t *iter){
     return(lista_iter_ver_actual(iter->iterador_lista));
 }
 bool hash_iter_al_final(const hash_iter_t *iter){
-    return((iter->pos == (iter->mi_hash->capacidad-1)) && (lista_iter_al_final(iter->iterador_lista)));
+    return((iter->pos == (iter->mi_hash->capacidad)));
 }
 
 void hash_iter_destruir(hash_iter_t* iter){
