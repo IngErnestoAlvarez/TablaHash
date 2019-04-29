@@ -6,7 +6,12 @@
 #include "lista.h"
 #include "hash.h"
 
+#define TAM_PRIMOS 7
+
+const int PRIMOS[] = {233, 467, 967, 1931, 4127, 9103, 20857, 51283};
+
 typedef struct nodo nodo_t;
+
 
 struct nodo{
     void* dato;
@@ -52,6 +57,8 @@ void* nodo_destruir(nodo_t* nodo){
 /**************************************************************/
 /*FUNCIONES AUXILIARES*/
 /**************************************************************/
+//!IMPLEMENTAR HASH_REDIMENSIONAR//
+
 
 size_t funcion_hash(const char* cp)
 {
@@ -99,12 +106,14 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
  * *****************************************************************/
 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
+    //!PASAR ARRIBA NODO_A_MODIFICAR//
     if(nodo_t* nodo_a_modificar = hash_buscar_clave(hash,clave)){
         nodo_a_modificar->dato=dato;
         return true;
     }
-    if(hash->cantidad > hash->capacidad*3){
-        if(!hash_redimensionar(hash, /*capacidad*2*/)){
+    //!HACER IF PARA CUANDO SOBREPASA PRIMOS[TAM_PRIMOS]//
+    if(hash->cantidad > (PRIMOS[hash->capacidad])){
+        if(!hash_redimensionar(hash, PRIMOS[hash->capacidad])){
         fprintf(stderr, "\nNo se pudo redimensionar.");
         return false;
         }
@@ -121,21 +130,21 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     //...
 }
 
-
+//?REVISAR//
 void *hash_borrar(hash_t *hash, const char *clave){
      if(!hash_pertenece(hash,clave)) return NULL;
      int posicion_tabla = (funcion_hash(clave))%hash->capacidad;
      lista_iter_t* iterador=lista_iter_crear(hash->tabla[posicion_tabla]);
      bool sigue=true;
+     nodo_t* nodo_borrado = NULL;
      while(!lista_iter_al_final(iterador) && sigue){
         if(strcmp(((nodo_t*)lista_iter_ver_actual(iterador))->clave,clave)){
-            nodo_t* nodo_borrado=lista_iter_borrar(iterador);
+            nodo_borrado=lista_iter_borrar(iterador);
             sigue=false;
         } 
         lista_iter_avanzar(iterador);
      }
      void* dato_borrado=nodo_destruir(nodo_borrado);
-     free(nodo_borrado);
      lista_iter_destruir(iterador);
      return(dato_borrado);
 }
