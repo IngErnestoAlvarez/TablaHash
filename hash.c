@@ -25,6 +25,16 @@ struct hash_iter{
     size_t pos;
 };
 
+
+nodo_t* nodo_crear(char* clave,void*dato){
+    nodo_t* nodo_nuevo=malloc(sizeof(nodo_t));
+    if(!nodo_nuevo) return NULL;
+    nodo_nuevo->clave=clave;
+    nodo_nuevo->dato=dato;
+    return(nodo_nuevo);
+
+}
+
 /**************************************************************/
 /*FUNCIONES AUXILIARES*/
 /**************************************************************/
@@ -74,39 +84,51 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
  *                          WORK IN PROGRESS
  * *****************************************************************/
 
-/* Guarda un elemento en el hash, si la clave ya se encuentra en la
- * estructura, la reemplaza. De no poder guardarlo devuelve false.
- * Pre: La estructura hash fue inicializada
- * Post: Se almacenó el par (clave, dato)
- */
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
-    if(nodo_t* nodo_a_modificar = hash_buscar_clave(hash,clave);){
+    if(nodo_t* nodo_a_modificar = hash_buscar_clave(hash,clave)){
         nodo_a_modificar->dato=dato;
-        return(true);
+        return true;
     }
     if(hash->cantidad > hash->capacidad*3){
-        if(!hash_redimensionar(hash, capacidad*2)){
-        printf("No se pudo redimensionar."); //printear en error.txt
-        return(false);
+        if(!hash_redimensionar(hash, /*capacidad*2*/)){
+        fprintf(stderr, "\nNo se pudo redimensionar.");
+        return false;
         }
     }
-    nodo_t* nuevo_nodo;
-    nuevo_nodo->clave=clave;
-    nuevo_nodo->dato=dato;
+    nodo_t* nuevo_nodo=nodo_crear(clave,dato);
+    if(nuevo_nodo==NULL){
+        fprintf(stderr, "\nNo se pudo crear el dato. (hash_guardar)");
+        return false;
+    } 
     int posicion_tabla = (funcion_hash(clave))%hash->capacidad;
     lista_insertar_ultimo(hash->tabla[posicion_tabla],nuevo_nodo);
     hash->cantidad++;
-    return(true);
+    return true;
     //...
 }
 
-/* Borra un elemento del hash y devuelve el dato asociado.  Devuelve
- * NULL si el dato no estaba.
- * Pre: La estructura hash fue inicializada
- * Post: El elemento fue borrado de la estructura y se lo devolvió,
- * en el caso de que estuviera guardado.
- */
-void *hash_borrar(hash_t *hash, const char *clave);
+
+void *hash_borrar(hash_t *hash, const char *clave){
+     if(!hash_pertenece(hash,clave)) return NULL;
+     int posicion_tabla = (funcion_hash(clave))%hash->capacidad;
+     lista_iter_t* iterador=lista_iter_crear(hash->tabla[posicion_tabla]);
+     bool sigue=true;
+     while(!lista_iter_al_final(iterador) && sigue){
+        if(strcmp(((nodo_t*)lista_iter_ver_actual(iterador))->clave,clave)){
+            nodo_t* nodo_borrado=lista_iter_borrar(iterador);
+            sigue=false;
+        } 
+        lista_iter_avanzar(iterador);
+     }
+     void* dato_borrado=nodo_borrado->dato;
+     free(nodo_borrado);
+     lista_iter_destruir(iterador);
+     return(dato_borrado);
+}
+
+/* *****************************************************************
+ *                          /WORK IN PROGRESS
+ * *****************************************************************/
 
 void *hash_obtener(const hash_t *hash, const char *clave){
     return(hash_buscar_clave(hash, clave)->dato);
