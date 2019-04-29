@@ -29,10 +29,24 @@ struct hash_iter{
 nodo_t* nodo_crear(char* clave,void*dato){
     nodo_t* nodo_nuevo=malloc(sizeof(nodo_t));
     if(!nodo_nuevo) return NULL;
-    nodo_nuevo->clave=clave;
+    char* nueva_clave = malloc(sizeof(char)*(strlen(clave)+1));
+    if(!nueva_clave){
+        fprintf(stderr, "No se pudo crear la nueva clave");
+        free(nodo_nuevo);
+        return NULL;
+    }
+    strcpy(nueva_clave, clave);
+    nueva_clave[strlen(clave)] = '\0';
+    nodo_nuevo->clave = nueva_clave;
     nodo_nuevo->dato=dato;
     return(nodo_nuevo);
+}
 
+void* nodo_destruir(nodo_t* nodo){
+    free(nodo->clave);
+    void* aux = nodo->dato;
+    free(nodo);
+    return aux;
 }
 
 /**************************************************************/
@@ -120,7 +134,7 @@ void *hash_borrar(hash_t *hash, const char *clave){
         } 
         lista_iter_avanzar(iterador);
      }
-     void* dato_borrado=nodo_borrado->dato;
+     void* dato_borrado=nodo_destruir(nodo_borrado);
      free(nodo_borrado);
      lista_iter_destruir(iterador);
      return(dato_borrado);
