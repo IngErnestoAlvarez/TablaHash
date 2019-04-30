@@ -31,6 +31,11 @@ struct hash_iter{
 };
 
 
+
+/**************************************************************/
+/*FUNCIONES AUXILIARES*/
+/**************************************************************/
+
 nodo_t* nodo_crear(char* clave,void*dato){
     nodo_t* nodo_nuevo=malloc(sizeof(nodo_t));
     if(!nodo_nuevo) return NULL;
@@ -54,9 +59,7 @@ void* nodo_destruir(nodo_t* nodo){
     return aux;
 }
 
-/**************************************************************/
-/*FUNCIONES AUXILIARES*/
-/**************************************************************/
+
 //!IMPLEMENTAR HASH_REDIMENSIONAR//
 
 
@@ -97,7 +100,19 @@ nodo_t* hash_buscar_clave(const hash_t* hash, const char* clave){
 /*********************************************/
 
 /* Crea el hash */
-hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
+hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
+    hash_t* nuevo_hash=malloc(sizeof(hash_t));
+    if(nuevo_hash == NULL) return NULL;
+    nuevo_hash->cantidad=0;
+    nuevo_hash->capacidad=0;
+    nuevo_hash->funcion=destruir_dato;
+    nuevo_hash->tabla=malloc(sizeof(lista_t)*PRIMOS[nuevo_hash->capacidad]);
+    if(nuevo_hash->tabla == NULL){
+        free(nuevo_hash);
+        return NULL;
+    }
+    return(nuevo_hash);
+}
 
 
 
@@ -106,8 +121,8 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
  * *****************************************************************/
 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
-    //!PASAR ARRIBA NODO_A_MODIFICAR//
-    if(nodo_t* nodo_a_modificar = hash_buscar_clave(hash,clave)){
+    nodo_t* nodo_a_modificar=hash_buscar_clave(hash,clave);
+    if(nodo_a_modificar!=NULL){
         nodo_a_modificar->dato=dato;
         return true;
     }
@@ -127,12 +142,12 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     lista_insertar_ultimo(hash->tabla[posicion_tabla],nuevo_nodo);
     hash->cantidad++;
     return true;
-    //...
 }
 
-//?REVISAR//
+//?Hice el cambio para no usar (al pedo) hash_pertenece, asique hash borrar ya deberia estar.
+//?Me parece medio feo el como use el sigue, pero es que ya estaba regalado, no se que opinas.
+
 void *hash_borrar(hash_t *hash, const char *clave){
-     if(!hash_pertenece(hash,clave)) return NULL;
      int posicion_tabla = (funcion_hash(clave))%hash->capacidad;
      lista_iter_t* iterador=lista_iter_crear(hash->tabla[posicion_tabla]);
      bool sigue=true;
@@ -144,9 +159,11 @@ void *hash_borrar(hash_t *hash, const char *clave){
         } 
         lista_iter_avanzar(iterador);
      }
+     if(sigue) return NULL; // si sigue siendo verdadero, es porque no estaba en la lista.
      void* dato_borrado=nodo_destruir(nodo_borrado);
      lista_iter_destruir(iterador);
-     return(dato_borrado);
+     hash->cantidad--;
+     return dato_borrado;
 }
 
 /* *****************************************************************
