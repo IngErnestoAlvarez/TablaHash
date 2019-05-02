@@ -126,12 +126,9 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
         nodo_a_modificar->dato=dato;
         return true;
     }
-    //!HACER IF PARA CUANDO SOBREPASA PRIMOS[TAM_PRIMOS]//
-    if(hash->cantidad > (PRIMOS[hash->capacidad])){
-        if(!hash_redimensionar(hash, PRIMOS[hash->capacidad])){
-        fprintf(stderr, "\nNo se pudo redimensionar.");
+    if(!hash_redimensionar(hash){
+        fprintf(stderr, "\nNo se pudo redimensionar el hash (hash_guardar).");
         return false;
-        }
     }
     nodo_t* nuevo_nodo=nodo_crear(clave,dato);
     if(nuevo_nodo==NULL){
