@@ -64,22 +64,23 @@ void hashificar(hash_t* viejo, hash_t* nuevo){
     for(int j = 0; j<viejo->capacidad; j++){
         while(!lista_esta_vacia(viejo->tabla[j])){
             nodo_t* nodo = lista_borrar_primero(viejo->tabla[j]);
-            hash_guardar(nuevo, nodo->clave, hash_nodo_destruir(nodo));
+            hash_guardar(nuevo, nodo->clave, nodo->dato);
+            hash_nodo_destruir(nodo);
         }
     }
 }
 
 bool hash_redimensionar(hash_t* hash){
-    hash_t* nuevo = hash_crear(hash->funcion);
     bool achicar = false;
-    if(!nuevo){
-        fprintf(stderr, "\nNo se pudo generar el nuevo hash al redimensionar");
-        return false;
-    } 
     //Si no hay que agrandar
     if((hash->cantidad<=(3*hash->capacidad))) achicar = true;
     //Si no hay que achicar
     if((hash->capacidad == PRIMOS[0])||(hash->cantidad>(hash->capacidad/4))||(!achicar)) return true;
+    hash_t* nuevo = hash_crear(hash->funcion);
+    if(!nuevo){
+        fprintf(stderr, "\nNo se pudo generar el nuevo hash al redimensionar");
+        return false;
+    } 
 
     bool esta = false;
         for(int i = 0; (i<TAM_PRIMOS);i++){
@@ -181,6 +182,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     nodo_t* nodo_a_modificar=hash_buscar_clave(hash,clave);
     if(nodo_a_modificar!=NULL){
+        if(hash->funcion)hash->funcion(nodo_a_modificar->dato);
         nodo_a_modificar->dato=dato;
         return true;
     }
@@ -203,7 +205,8 @@ void *hash_borrar(hash_t *hash, const char *clave){
     lista_iter_t* iterador=lista_iter_crear(hash->tabla[posicion_tabla]);
     while(!lista_iter_al_final(iterador)){
         if(!strcmp(((nodo_t*)lista_iter_ver_actual(iterador))->clave,clave)){
-            void* dato_borrado=hash_nodo_destruir(lista_iter_borrar(iterador));
+            nodo_t* nodo = lista_iter_borrar(iterador);
+            void* dato_borrado= hash_nodo_destruir(nodo);
             lista_iter_destruir(iterador);
             hash->cantidad--;
             hash_redimensionar(hash);
@@ -230,7 +233,11 @@ size_t hash_cantidad(const hash_t *hash){
 
 void hash_destruir(hash_t *hash){
     for(int i = 0; i < hash->capacidad; i++){
-        lista_destruir(hash->tabla[i], hash->funcion);
+        while(!lista_esta_vacia(hash->tabla[i])){
+            if(hash->funcion) hash->funcion(hash_nodo_destruir(lista_borrar_primero(hash->tabla[i])));
+            else hash_nodo_destruir(lista_borrar_primero(hash->tabla[i]));
+        }
+        lista_destruir(hash->tabla[i], NULL);
     }
     free(hash->tabla);
     free(hash);
@@ -257,19 +264,27 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 }
 
 bool hash_iter_avanzar(hash_iter_t *iter){
-    if(lista_iter_avanzar(iter->iterador_lista)) return true;
-    iter->pos++;
     if(hash_iter_al_final(iter)) return false;
-    lista_iter_destruir(iter->iterador_lista);
-    iter->iterador_lista = lista_iter_crear(iter->mi_hash->tabla[iter->pos]);
-    if(!iter->iterador_lista){
-        fprintf(stderr, "No se pudo crear un iterador nuevo");
+    lista_iter_avanzar(iter->iterador_lista);
+    while(!hash_iter_ver_actual(iter)){
+        lista_iter_destruir(iter->iterador_lista);
+        iter->iterador_lista = NULL;
+        iter->pos++;
+        if(hash_iter_al_final(iter)) return false;
+        iter->iterador_lista = lista_iter_crear(iter->mi_hash->tabla[iter->pos]);
+        if(!iter->iterador_lista){
+            fprintf(stderr, "No se pudo crear un iterador nuevo");
+            return false;
+        }
     }
     return true;
 }
 
 const char *hash_iter_ver_actual(const hash_iter_t *iter){
-    return(lista_iter_ver_actual(iter->iterador_lista));
+    if(hash_iter_al_final(iter)) return NULL;
+    nodo_t* nodo = lista_iter_ver_actual(iter->iterador_lista);
+    if(!nodo) return NULL;
+    return(nodo->clave);
 }
 bool hash_iter_al_final(const hash_iter_t *iter){
     if(!iter->mi_hash->cantidad) return true;
@@ -277,6 +292,6 @@ bool hash_iter_al_final(const hash_iter_t *iter){
 }
 
 void hash_iter_destruir(hash_iter_t* iter){
-    lista_iter_destruir(iter->iterador_lista);
+    if(iter->iterador_lista) lista_iter_destruir(iter->iterador_lista);
     free(iter);
 }
