@@ -7,9 +7,9 @@
 #include "hash.h"
 
 //CANTIDAD DE POSICIONES VECTOR "PRIMOS"
-#define TAM_PRIMOS 7
+#define TAM_PRIMOS 12
 
-const int PRIMOS[] = {233, 467, 967, 1931, 4127, 9103, 20857, 51283};
+const int PRIMOS[] = {233, 467, 967, 1931, 4127, 9103, 20857, 51283,104729,208291,416659,799999,999979};
 
 typedef struct nodo nodo_t;
 
@@ -177,6 +177,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     }
     return(nuevo_hash);
 }
+
 
 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
