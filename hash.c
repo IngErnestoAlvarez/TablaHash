@@ -7,9 +7,7 @@
 #include "hash.h"
 
 //CANTIDAD DE POSICIONES VECTOR "PRIMOS"
-#define TAM_PRIMOS 12
-
-const int PRIMOS[] = {233, 467, 967, 1931, 4127, 9103, 20857, 51283,104729,208291,416659,799999,999979};
+#define PRIMO 233
 
 typedef struct nodo nodo_t;
 
@@ -36,6 +34,17 @@ struct hash_iter{
 /**************************************************************/
 /*FUNCIONES AUXILIARES*/
 /**************************************************************/
+
+size_t funcion_hash(const char* cp)
+{
+    size_t hash = 0x811c9dc5;
+    while (*cp) {
+        hash ^= (unsigned char) *cp++;
+        hash *= 0x01000193;
+    }
+    return hash;
+}
+
 
 nodo_t* hash_nodo_crear(const char* clave,void*dato){
     nodo_t* nodo_nuevo=malloc(sizeof(nodo_t));
@@ -65,72 +74,36 @@ void hashificar(hash_t* viejo, hash_t* nuevo){
         while(!lista_esta_vacia(viejo->tabla[j])){
             nodo_t* nodo = lista_borrar_primero(viejo->tabla[j]);
             hash_guardar(nuevo, nodo->clave, nodo->dato);
-            hash_nodo_destruir(nodo);
+            free(nodo->clave);
+            free(nodo);
         }
     }
 }
 
-bool hash_redimensionar(hash_t* hash){
-    bool achicar = false;
-    //Si no hay que agrandar
-    if((hash->cantidad<=(3*hash->capacidad))) achicar = true;
-    //Si no hay que achicar
-    if((hash->capacidad == PRIMOS[0])||(hash->cantidad>(hash->capacidad/4))||(!achicar)) return true;
-    hash_t* nuevo = hash_crear(hash->funcion);
+bool hash_redimensionar(hash_t** hash, size_t tam_nuevo, const char* clave){
+    hash_t* nuevo = hash_crear((*hash)->funcion);
     if(!nuevo){
-        fprintf(stderr, "\nNo se pudo generar el nuevo hash al redimensionar");
-        return false;
-    } 
-
-    bool esta = false;
-        for(int i = 0; (i<TAM_PRIMOS);i++){
-            if(hash->capacidad == PRIMOS[i]) {
-                esta = true; 
-                if(hash->cantidad>(3*hash->capacidad)){
-                    nuevo->capacidad = PRIMOS[i+1];
-                }
-                if((hash->cantidad>(hash->capacidad/4))){
-                    nuevo->capacidad = PRIMOS[i-1];
-                }
-            }
-        }
-    
-    if(!esta){
-        if(!achicar)nuevo->capacidad = hash->capacidad*2;
-        else{
-            if(hash->capacidad == PRIMOS[TAM_PRIMOS]) nuevo->capacidad = PRIMOS[TAM_PRIMOS-1];
-            else nuevo->capacidad = hash->capacidad/2;
-        } 
-    }
-
-    lista_t** aux = realloc(nuevo->tabla, sizeof(lista_t*)*nuevo->capacidad);
-    if(!aux){
-        hash_destruir(nuevo);
-        fprintf(stderr,"No se pudo agrandar el tamaño del hash");
+        fprintf(stderr, "No pudo generarse el hash para redimensionar");
         return false;
     }
-    nuevo->tabla = aux;
-    hashificar(hash, nuevo);
-    hash_destruir(hash);
-    return nuevo;
-}
-
-
-size_t funcion_hash(const char* cp)
-{
-    size_t hash = 0x811c9dc5;
-    while (*cp) {
-        hash ^= (unsigned char) *cp++;
-        hash *= 0x01000193;
+    for(int i = 0; i<PRIMO; i++) lista_destruir(nuevo->tabla[i], NULL);
+    nuevo->capacidad = tam_nuevo;
+    nuevo->tabla = malloc(sizeof(lista_t*)*nuevo->capacidad);
+    for(int j=0; j<nuevo->capacidad;j++){
+        nuevo->tabla[j] = lista_crear();
+        if(!nuevo->tabla[j]) return false;
     }
-    return hash;
+    hashificar((*hash), nuevo);
+    hash_destruir((*hash));
+    (*hash) = nuevo;
+    return true;
 }
 
 /* Pre: El hash fue creado.
 *Devuelve el nodo donde se encontró la clave, si no lo encuentra
 *devuelve NULL.*/
 nodo_t* hash_buscar_clave(const hash_t* hash, const char* clave){
-    lista_t* lista = hash->tabla[(funcion_hash(clave))%hash->capacidad];
+    lista_t* lista = hash->tabla[(funcion_hash(clave))%(hash->capacidad)];
     if(lista_esta_vacia(lista)) return NULL;
     lista_iter_t* iter = lista_iter_crear(lista);
     if(!iter){
@@ -156,7 +129,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     hash_t* nuevo_hash=malloc(sizeof(hash_t));
     if(nuevo_hash == NULL) return NULL;
     nuevo_hash->cantidad=0;
-    nuevo_hash->capacidad=PRIMOS[0];
+    nuevo_hash->capacidad=PRIMO;
     nuevo_hash->funcion=destruir_dato;
     nuevo_hash->tabla=malloc(sizeof(lista_t*)*nuevo_hash->capacidad);
     if(nuevo_hash->tabla == NULL){
@@ -187,13 +160,15 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
         nodo_a_modificar->dato=dato;
         return true;
     }
-    if(!hash_redimensionar(hash)) return false;
+    if(hash->cantidad == (3*hash->capacidad)){
+        if(!hash_redimensionar(&hash, (2*hash->capacidad), clave))return false;
+    }
     nodo_t* nuevo_nodo=hash_nodo_crear(clave,dato);
     if(nuevo_nodo==NULL){
         fprintf(stderr, "\nNo se pudo crear el dato. (hash_guardar)");
         return false;
-    } 
-    size_t posicion_tabla = (funcion_hash(clave))%hash->capacidad;
+    }
+    int posicion_tabla = (int)(funcion_hash(clave)%(hash->capacidad));
     lista_insertar_ultimo(hash->tabla[posicion_tabla],nuevo_nodo);
     hash->cantidad++;
     return true;
@@ -210,7 +185,9 @@ void *hash_borrar(hash_t *hash, const char *clave){
             void* dato_borrado= hash_nodo_destruir(nodo);
             lista_iter_destruir(iterador);
             hash->cantidad--;
-            hash_redimensionar(hash);
+            if((hash->cantidad<hash->capacidad/4)&&(hash->capacidad != PRIMO)){
+                if(!hash_redimensionar(&hash, hash->capacidad/2, "Hola")) fprintf(stderr, "Se guardó el valor, pero no se pudo redimensionar");
+            }
             return dato_borrado;
         } 
         lista_iter_avanzar(iterador);
