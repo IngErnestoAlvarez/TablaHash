@@ -87,8 +87,13 @@ bool hash_redimensionar(hash_t* hash, size_t tam_nuevo){
     }
     for(int j=0; j<tam_nuevo;j++){
         tabla_nueva[j] = lista_crear();
-        //! Hay que destruir las funciones anteriores.
-        if(!tabla_nueva[j]) return false;
+        if(!tabla_nueva[j]) {
+            for(int k = 0; k<j; k++){
+                lista_destruir(tabla_nueva[k], NULL);
+            }
+            fprintf(stderr, "No se pudieron crear todas las listas.");
+            return false;
+        }
     }
     hashificar(hash, tabla_nueva, tam_nuevo);
     hash->capacidad = tam_nuevo;
