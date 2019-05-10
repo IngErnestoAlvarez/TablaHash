@@ -72,7 +72,8 @@ void* hash_nodo_destruir(nodo_t* nodo){
 void hashificar(hash_t* viejo, lista_t** tabla_nueva, size_t tam_nuevo){
     for(int j = 0; j<viejo->capacidad; j++){
         while(!lista_esta_vacia(viejo->tabla[j])){
-            lista_insertar_ultimo(tabla_nueva[funcion_hash(nodo->clave)%tam_nuevo], lista_borrar_primero(viejo->tabla[j]));
+            nodo_t* nodo = lista_borrar_primero(viejo->tabla[j]);
+            lista_insertar_ultimo(tabla_nueva[funcion_hash(nodo->clave)%tam_nuevo], nodo);
         }
         lista_destruir(viejo->tabla[j], NULL);
     }
@@ -86,9 +87,12 @@ bool hash_redimensionar(hash_t* hash, size_t tam_nuevo){
     }
     for(int j=0; j<tam_nuevo;j++){
         tabla_nueva[j] = lista_crear();
+        //! Hay que destruir las funciones anteriores.
         if(!tabla_nueva[j]) return false;
     }
-    hashificar((*hash), tabla_nueva, tam_nuevo);
+    hashificar(hash, tabla_nueva, tam_nuevo);
+    hash->capacidad = tam_nuevo;
+    free(hash->tabla);
     hash->tabla = tabla_nueva;
     return true;
 }
