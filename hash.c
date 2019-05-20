@@ -178,10 +178,10 @@ void *hash_borrar(hash_t *hash, const char *clave){
             void* dato_borrado = hash_nodo_destruir(nodo);
             lista_iter_destruir(iterador);
             hash->cantidad--;
-            if((hash->cantidad < hash->capacidad / FACTOR_PARA_ACHICAMIENTO) && (hash->capacidad != PRIMO)){
+            if((hash->cantidad < (hash->capacidad / FACTOR_PARA_ACHICAMIENTO)) && (hash->capacidad != PRIMO)){
                 hash_redimensionar(hash, hash->capacidad / FACTOR_ACHICAMIENTO);
-            return dato_borrado;
             }
+            return dato_borrado;
         } 
         lista_iter_avanzar(iterador);
     }
